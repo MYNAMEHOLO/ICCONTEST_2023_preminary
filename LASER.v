@@ -16,15 +16,28 @@ output reg DONE);
 // parameter here
 parameter   GET_TAR = 0,
             C1_F = 1,
-            FINISH = 2;
+            COMPARE = 2,
+            FINISH = 3;
 
-parameter PAR_NUM = 2;
+parameter PAR_NUM = 3;
 reg [PAR_NUM - 1 : 0] cs,ns;
 
+// The 40 target point we want to hit
 reg [3:0] x_tar [39:0];
 reg [3:0] y_tar [39:0];
 reg [5:0] cnt_39;
 reg [5:0] hit_39;
+reg [5:0] old_hit_39;
+// golden flag for C1 and C2
+reg golden_c1;
+reg golden_c2;
+
+// golden temp for C1X , C2X , C1Y , C2Y
+reg [3:0] C1X_temp;
+reg [3:0] C2X_temp;
+reg [3:0] C1Y_temp;
+reg [3:0] C2Y_temp;
+
 integer i;
 integer j;
 // comb logic here
@@ -43,6 +56,7 @@ reg [8:0] add_r1 [9:0];
 reg [8:0] add_r2 [9:0];
 reg [9:0] cir_cnt;
 wire [3:0] cir_cnt_1cycle;
+
 always@(*)begin
     for(j = 0,j <= 9 ; j = j+1)begin
         sub_x1[j] = (C1X > x_tar[j + cnt_39])? (C1X - x_tar[j + cnt_39]) : (x_tar[j + cnt_39] - C1X);
@@ -82,9 +96,11 @@ always@(*)begin
     else begin
         case(1'b1)
             cs[GET_TAR]:begin
-                if(cnt_39 == 6'd39) ns[FINISH] = 1'd1;
+                if(cnt_39 == 6'd39) ns[C1_F] = 1'd1;
                 else ns[GET_TAR] = 1'd1;
             end
+            cs[C1_F]: ns[COMPARE] = 1'd1;
+            cs[COMPARE]: ns
             cs[FINISH]: ns[FINISH] = 1'd1;
         default: ns = 'd0;
         endcase
@@ -98,9 +114,16 @@ always@(posedge CLK)begin
         C1Y <= 'd0;
         C2X <= 'd0;
         C2Y <= 'd0;
+        C1X_temp <= 'd0;
+        C2X_temp <= 'd0;
+        C1Y_temp <= 'd0;
+        C2X_temp <= 'd0;
         DONE <= 1'd0;
         cnt_39 <= 'd0;
         hit_39 <= 'd0;
+        old_hit_39 <= 'd0;
+        golden_c1 <= 1'd0;
+        golden_c2 <= 1'd0;
         for(i = 0; i <= 39; i = i+1)begin
             x_tar[i] <= 'd0;
             y_tar[i] <= 'd0;
@@ -112,6 +135,19 @@ always@(posedge CLK)begin
                 x_tar[cnt_39] <= X;
                 y_tar[cnt_39] <= Y;
                 cnt_39 <= cnt_39 + 1'd1;
+                C1X <= 'd0;
+                C1Y <= 'd0;
+                C2X <= 'd0;
+                C2Y <= 'd0;
+                C1X_temp <= 'd0;
+                C2X_temp <= 'd0;
+                C1Y_temp <= 'd0;
+                C2X_temp <= 'd0;
+                cnt_39 <= 'd0;
+                hit_39 <= 'd0;
+                old_hit_39 <= 'd0;
+                golden_c1 <= 1'd0;
+                golden_c2 <= 1'd0;
             end
             cs[C1_F]:begin
                 cnt_39 <= 'd0;
